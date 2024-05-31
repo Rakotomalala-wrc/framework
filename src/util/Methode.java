@@ -5,11 +5,13 @@ import annotations.Get;
 
 import javax.servlet.http.HttpServletRequest;
 import java.io.File;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class Methode {
 
@@ -73,13 +75,39 @@ public class Methode {
                 if (method.isAnnotationPresent(Get.class)) {
                     Get getAnnotation = method.getAnnotation(Get.class);
                     if(getAnnotation.value().equals(url)) {
-                        Mapping mapping = new Mapping(controller.getSimpleName(), method.getName());
+                        Mapping mapping = new Mapping(controller.getName(), method.getName());
                         hashMap.put(getAnnotation.value(), mapping);
                     }
                 }
             }
         }
         return hashMap;
+    }
+
+    public Mapping getMapping(HashMap<String, Mapping> hashMap) {
+        for (Map.Entry<String, Mapping> entry : hashMap.entrySet()) {
+            return entry.getValue();
+        }
+        return null;
+    }
+
+
+    public String execute(Mapping mapping) throws ClassNotFoundException, NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException {
+        if(mapping != null) {
+            String className = mapping.getClassName();
+            String methodName = mapping.getMethodName();
+
+            Class<?> clazz = Class.forName(className);
+
+            Method methode = clazz.getMethod(methodName, String.class);
+
+            Object instance = clazz.getDeclaredConstructor().newInstance();
+
+            return (String) methode.invoke(instance, "Akory leka");
+        } else {
+            System.out.println("Mapping not found");
+            return null;
+        }
     }
 
     public String getUrlAfterSprint1(HttpServletRequest request) {
