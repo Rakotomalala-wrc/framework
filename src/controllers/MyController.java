@@ -6,8 +6,9 @@ import annotations.Get;
 @AnnotationController
 public class MyController {
     @Get(value = "/hola")
-    public void hola() {
-        System.out.println("hola amigo");
+    public String hola(String value) {
+        System.out.println("Value: " + value);
+        return value;
     }
 
     public static void main (String[] args) {

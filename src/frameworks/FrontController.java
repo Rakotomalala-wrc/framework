@@ -4,6 +4,7 @@ import util.Mapping;
 import util.Methode;
 
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
 import java.util.HashMap;
 import java.util.List;
 
@@ -30,7 +31,7 @@ public class FrontController extends HttpServlet {
     }
 
     protected void processRequest(HttpServletRequest request, HttpServletResponse response)
-            throws ServletException, IOException {
+            throws ServletException, IOException, ClassNotFoundException, InvocationTargetException, NoSuchMethodException, InstantiationException, IllegalAccessException {
 
         String urlString = request.getRequestURL().toString();
 
@@ -38,6 +39,9 @@ public class FrontController extends HttpServlet {
 
         mapping = methode.urlMethod(controllers, url);
 
+        String value = methode.execute(methode.getMapping(mapping));
+
+        request.setAttribute("value", value);
         request.setAttribute("mapping", mapping);
         request.setAttribute("url", urlString);
         request.setAttribute("controllers", controllersName);
@@ -47,13 +51,23 @@ public class FrontController extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        processRequest(request, response);
+        try {
+            processRequest(request, response);
+        } catch (ClassNotFoundException | IllegalAccessException | InstantiationException | NoSuchMethodException |
+                 InvocationTargetException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        processRequest(request, response);
+        try {
+            processRequest(request, response);
+        } catch (ClassNotFoundException | IllegalAccessException | InstantiationException | NoSuchMethodException |
+                 InvocationTargetException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     private String getControllerPackageName() {
