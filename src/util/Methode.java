@@ -2,6 +2,7 @@ package util;
 
 import annotations.AnnotationController;
 import annotations.Get;
+import frameworks.ModelView;
 
 import javax.servlet.http.HttpServletRequest;
 import java.io.File;
@@ -91,26 +92,64 @@ public class Methode {
         return null;
     }
 
-
-    public String execute(Mapping mapping) throws ClassNotFoundException, NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException {
+    public Object execute(Mapping mapping, Object... params) throws ClassNotFoundException, NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException {
         if(mapping != null) {
             String className = mapping.getClassName();
-            String methodName = mapping.getMethodName();
 
             Class<?> clazz = Class.forName(className);
 
-            Method methode = clazz.getMethod(methodName, String.class);
+            // Find the method that matches the name and parameters
+            Method method = getMethod(clazz, mapping.getMethodName(), params);
 
             Object instance = clazz.getDeclaredConstructor().newInstance();
 
-            return (String) methode.invoke(instance, "Akory leka");
+            Object result = method.invoke(instance, params);
+
+            if(result instanceof String) {
+                return result;
+            } else if (result instanceof ModelView) {
+                return result;
+            } else {
+                System.out.println("Le type de retour n'existe pas");
+            }
         } else {
             System.out.println("Mapping not found");
-            return null;
         }
+        return null;
     }
 
-    public String getUrlAfterSprint1(HttpServletRequest request) {
+    private Method getMethod(Class<?> clazz, String methodName, Object... params) throws NoSuchMethodException {
+        Method[] methods = clazz.getMethods();
+        Method targetMethod = null;
+
+        for (Method method : methods) {
+            if (method.getName().equals(methodName)) {
+                Class<?>[] parameterTypes = method.getParameterTypes();
+                if (parameterTypes.length == params.length) {
+                    boolean matches = true;
+                    for (int i = 0; i < parameterTypes.length; i++) {
+                        if (!parameterTypes[i].isAssignableFrom(params[i].getClass())) {
+                            matches = false;
+                            break;
+                        }
+                    }
+                    if (matches) {
+                        targetMethod = method;
+                        break;
+                    }
+                }
+            }
+        }
+
+        if (targetMethod == null) {
+            throw new NoSuchMethodException("No such method found with the given name and parameter count.");
+        }
+        return targetMethod;
+    }
+
+
+
+    public String getUrlAfterSprint(HttpServletRequest request) {
         // Extract the part after /sprint1
         String contextPath = request.getContextPath(); // This should be "/sprint1"
         String uri = request.getRequestURI(); // This should be "/sprint1/holla"

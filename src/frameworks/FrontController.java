@@ -20,6 +20,12 @@ public class FrontController extends HttpServlet {
     public List<String> controllersName;
     public Methode methode;
     public String url;
+    public Object result;
+    public Object[] params;
+    public String stringParam;
+    public String variableName;
+    public Object value;
+    public String urlDispatcher;
 
     @Override
     public void init() throws ServletException {
@@ -28,6 +34,10 @@ public class FrontController extends HttpServlet {
         String packageName = getControllerPackageName();
         controllers = methode.scanControllers(packageName);
         controllersName = methode.getClassName(controllers);
+        stringParam = "Ohatra fotsiny";
+        variableName = "tsekijoby";
+        value = 69;
+        urlDispatcher = "/test.jsp";
     }
 
     protected void processRequest(HttpServletRequest request, HttpServletResponse response)
@@ -35,13 +45,27 @@ public class FrontController extends HttpServlet {
 
         String urlString = request.getRequestURL().toString();
 
-        url = methode.getUrlAfterSprint1(request);
+        url = methode.getUrlAfterSprint(request);
 
         mapping = methode.urlMethod(controllers, url);
 
-        String value = methode.execute(methode.getMapping(mapping));
+        if (url.equals("/hola")) {
+            params = new Object[]{stringParam};
+        } else if (url.equals("/hole")) {
+            params = new Object[]{variableName, value, urlDispatcher};
+        }
 
-        request.setAttribute("value", value);
+        result = methode.execute(methode.getMapping(mapping), params);
+
+        if(result instanceof String) {
+            request.setAttribute("value", result);
+        } else if (result instanceof ModelView) {
+            request.setAttribute("data", ((ModelView) result).getData());
+            request.getRequestDispatcher(((ModelView) result).getUrl()).forward(request, response);
+        } else {
+            throw new NoSuchMethodException("No such method found with the given name and parameter count.");
+        }
+
         request.setAttribute("mapping", mapping);
         request.setAttribute("url", urlString);
         request.setAttribute("controllers", controllersName);
