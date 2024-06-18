@@ -2,17 +2,16 @@ package util;
 
 import annotations.AnnotationController;
 import annotations.Get;
+import annotations.Param;
 import frameworks.ModelView;
 
 import javax.servlet.http.HttpServletRequest;
 import java.io.File;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.lang.reflect.Parameter;
 import java.net.URL;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class Methode {
 
@@ -92,20 +91,33 @@ public class Methode {
         return null;
     }
 
-    public Object execute(Mapping mapping, Object... params) throws ClassNotFoundException, NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException {
-        if(mapping != null) {
+    public Object execute(Mapping mapping, HttpServletRequest request) throws ClassNotFoundException, NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException {
+        if (mapping != null) {
             String className = mapping.getClassName();
-
             Class<?> clazz = Class.forName(className);
 
             // Find the method that matches the name and parameters
-            Method method = getMethod(clazz, mapping.getMethodName(), params);
+            Method method = getMethod(clazz, mapping.getMethodName(), request);
+
+            List<String> parameterNames = getParameterNamesList(request);
+            String[] parameterValues = new String[parameterNames.size()];
+
+            if (parameterNames != null) {
+                for (int i = 0; i < parameterNames.size(); i++) {
+                    parameterValues[i] = request.getParameter(parameterNames.get(i));
+                }
+            }
 
             Object instance = clazz.getDeclaredConstructor().newInstance();
+            Object result;
 
-            Object result = method.invoke(instance, params);
+            if (parameterValues.length > 0) {
+                result = method.invoke(instance, (Object[]) parameterValues);
+            } else {
+                result = method.invoke(instance);
+            }
 
-            if(result instanceof String) {
+            if (result instanceof String) {
                 return result;
             } else if (result instanceof ModelView) {
                 return result;
@@ -118,19 +130,32 @@ public class Methode {
         return null;
     }
 
-    private Method getMethod(Class<?> clazz, String methodName, Object... params) throws NoSuchMethodException {
+    private Method getMethod(Class<?> clazz, String methodName, HttpServletRequest request) throws NoSuchMethodException {
         Method[] methods = clazz.getMethods();
         Method targetMethod = null;
 
+        // Obtenez la liste des noms de paramètres de la requête
+        List<String> parameterNames = getParameterNamesList(request);
+
         for (Method method : methods) {
+            // Vérifiez si le nom de la méthode correspond
             if (method.getName().equals(methodName)) {
-                Class<?>[] parameterTypes = method.getParameterTypes();
-                if (parameterTypes.length == params.length) {
+                System.out.println(method.getName());
+                Parameter[] parameters = method.getParameters();
+                if (parameters.length == parameterNames.size()) {
                     boolean matches = true;
-                    for (int i = 0; i < parameterTypes.length; i++) {
-                        if (!parameterTypes[i].isAssignableFrom(params[i].getClass())) {
-                            matches = false;
-                            break;
+                    for(int i = 0; i < parameters.length; i++) {
+                        Param paramAnnotation = parameters[i].getAnnotation(Param.class);
+                        if (paramAnnotation != null) {
+                            String paramName = paramAnnotation.name();
+                            System.out.println(paramName);
+                            System.out.println(parameterNames.get(i));
+                            if (!parameterNames.get(i).equals(paramName)) {
+                                matches = false;
+                                break;
+                            }
+                        } else {
+                            throw new IllegalArgumentException("Parameter annotation @Param not found for method parameter");
                         }
                     }
                     if (matches) {
@@ -142,18 +167,28 @@ public class Methode {
         }
 
         if (targetMethod == null) {
-            throw new NoSuchMethodException("No such method found with the given name and parameter count.");
+            throw new NoSuchMethodException("No such method found with the given name and parameter names.");
         }
         return targetMethod;
     }
 
-
-
     public String getUrlAfterSprint(HttpServletRequest request) {
         // Extract the part after /sprint1
         String contextPath = request.getContextPath(); // This should be "/sprint1"
-        String uri = request.getRequestURI(); // This should be "/sprint1/holla"
-        return uri.substring(contextPath.length()); // This should be "/holla"
+        String uri = request.getRequestURI(); // This should be "/sprint1/hola"
+        return uri.substring(contextPath.length()); // This should be "/hola"
+    }
+
+    public List<String> getParameterNamesList(HttpServletRequest request) {
+        Enumeration<String> parameterNames = request.getParameterNames();
+
+        List<String> parameterNamesList = new ArrayList<>();
+
+        while (parameterNames.hasMoreElements()) {
+            parameterNamesList.add(parameterNames.nextElement());
+        }
+
+        return parameterNamesList;
     }
 
 }

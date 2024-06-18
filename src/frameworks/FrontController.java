@@ -15,17 +15,12 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 public class FrontController extends HttpServlet {
-    public HashMap<String, Mapping> mapping;
+    public HashMap<String, Mapping> hashmap;
     public List<Class<?>> controllers;
     public List<String> controllersName;
     public Methode methode;
     public String url;
     public Object result;
-    public Object[] params;
-    public String stringParam;
-    public String variableName;
-    public Object value;
-    public String urlDispatcher;
 
     @Override
     public void init() throws ServletException {
@@ -33,29 +28,20 @@ public class FrontController extends HttpServlet {
         methode = new Methode();
         String packageName = getControllerPackageName();
         controllers = methode.scanControllers(packageName);
+        if (controllers.isEmpty()) {
+            throw new ServletException("No controllers found in the package 'controllers'");
+        }
         controllersName = methode.getClassName(controllers);
-        stringParam = "Ohatra fotsiny";
-        variableName = "tsekijoby";
-        value = 69;
-        urlDispatcher = "/test.jsp";
     }
 
     protected void processRequest(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException, ClassNotFoundException, InvocationTargetException, NoSuchMethodException, InstantiationException, IllegalAccessException {
 
         String urlString = request.getRequestURL().toString();
-
         url = methode.getUrlAfterSprint(request);
+        hashmap = methode.urlMethod(controllers, url);
 
-        mapping = methode.urlMethod(controllers, url);
-
-        if (url.equals("/hola")) {
-            params = new Object[]{stringParam};
-        } else if (url.equals("/hole")) {
-            params = new Object[]{variableName, value, urlDispatcher};
-        }
-
-        result = methode.execute(methode.getMapping(mapping), params);
+        result = methode.execute(methode.getMapping(hashmap), request);
 
         if(result instanceof String) {
             request.setAttribute("value", result);
@@ -66,7 +52,7 @@ public class FrontController extends HttpServlet {
             throw new NoSuchMethodException("No such method found with the given name and parameter count.");
         }
 
-        request.setAttribute("mapping", mapping);
+        request.setAttribute("hashmap", hashmap);
         request.setAttribute("url", urlString);
         request.setAttribute("controllers", controllersName);
         request.getRequestDispatcher("/index.jsp").forward(request, response);
