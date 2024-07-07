@@ -1,6 +1,7 @@
 package frameworks;
 
 import java.util.HashMap;
+import java.util.Map;
 
 public class ModelView {
     private String url;
@@ -33,5 +34,23 @@ public class ModelView {
 
     public void addObject(String key, Object value) {
         this.data.put(key, value);
+    }
+
+    public String getSingleKey() {
+        if (this.data.size() == 1) {
+            for (Map.Entry<String, Object> entry : this.data.entrySet()) {
+                return entry.getKey();
+            }
+        }
+        return null;
+    }
+
+    public Object getSingleValue() {
+        if (this.data.size() == 1) {
+            for (Map.Entry<String, Object> entry : this.data.entrySet()) {
+                return entry.getValue();
+            }
+        }
+        return null;
     }
 }

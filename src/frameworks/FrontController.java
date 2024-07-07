@@ -46,7 +46,7 @@ public class FrontController extends HttpServlet {
         if(result instanceof String) {
             request.setAttribute("value", result);
         } else if (result instanceof ModelView) {
-            request.setAttribute("data", ((ModelView) result).getData());
+            request.setAttribute("data" , ((ModelView) result).getSingleValue());
             request.getRequestDispatcher(((ModelView) result).getUrl()).forward(request, response);
         } else {
             throw new NoSuchMethodException("No such method found with the given name and parameter count.");
